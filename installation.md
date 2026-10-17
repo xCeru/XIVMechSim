@@ -46,6 +46,16 @@ You do not need the GitHub Actions `PAT` secret. Everything builds and releases 
 
 The Dalamud installer picks up the new version from `pluginmaster.json` automatically on its next refresh.
 
+## Cutting a new release via GitHub Actions
+
+You can also trigger a release from the GitHub web UI — no local build needed:
+
+1. Go to `https://github.com/xCeru/XIVMechSim/actions`
+2. Select the **"Release plugin"** workflow
+3. Click **Run workflow**, pick a version bump (patch/minor/major/revision), and run it
+
+The workflow builds the plugin, bumps `AnoMech.csproj`, packages `latest.zip`, regenerates `pluginmaster.json`, commits everything to this repo, and creates a GitHub release tagged `vX.Y.Z.W` with the zip as an asset. It uses the built-in `github.token`, so no PAT secret is required.
+
 ## Dalamud repo URL
 
 ```
