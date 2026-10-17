@@ -67,7 +67,7 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
 
       - name: Build
-        run: dotnet build AnoMech/AnoMech.sln --configuration Release
+        run: dotnet build AnoMech.sln --configuration Release
 
       - name: Commit version bump
         uses: EndBug/add-and-commit@v9
