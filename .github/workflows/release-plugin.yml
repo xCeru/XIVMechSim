@@ -82,15 +82,15 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          $dir = "AnoMech/bin/Release/AnoMech"
-          "manifest=$(Join-Path $dir "AnoMech.json")" >> $env:GITHUB_OUTPUT
-          "zip=$dir/latest.zip"                        >> $env:GITHUB_OUTPUT
+          $dir = "AnoMech/bin/Release"
+          "manifest=$dir/AnoMech.json" >> $env:GITHUB_OUTPUT
+          "zip=$dir/latest.zip"        >> $env:GITHUB_OUTPUT
 
       - name: Package plugin zip
         shell: pwsh
         run: |
-          $dir = "AnoMech/bin/Release/AnoMech"
-          Compress-Archive -Path "$dir\*" -DestinationPath "$dir\latest.zip" -Force
+          $dir = "AnoMech/bin/Release"
+          Get-ChildItem $dir -File | Compress-Archive -DestinationPath "$dir\latest.zip" -Force
 
       - name: Stage plugin package into plugins/AnoMech
         shell: pwsh
