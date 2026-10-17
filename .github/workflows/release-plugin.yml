@@ -14,14 +14,138 @@ on:
           - revision
 
 permissions:
-  contents: write          # lets the reusable workflow create the release + push the bump commit
+  contents: write   # commit version bump + manifest, create release in THIS repo
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
   build:
-    uses: anomek/MyDalamudPlugins/.github/workflows/build-plugin.yml@master
-    with:
-      internal_name: AnoMech
-      solution_name: AnoMech
-      version_bump: ${{ inputs.version_bump }}
-    secrets:
-      PAT: ${{ secrets.PAT }}
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Bump <Version> in AnoMech.csproj (major/minor/patch/revision)
+      - name: Bump version
+        id: bump
+        shell: pwsh
+        run: |
+          $csproj = "AnoMech/AnoMech.csproj"
+          $bump = "${{ inputs.version_bump }}".ToLower()
+          $idx = @{ 'major' = 0; 'minor' = 1; 'patch' = 2; 'revision' = 3 }
+          if (-not $idx.ContainsKey($bump)) { throw "Invalid version_bump '$bump' (use major|minor|patch|revision)" }
+
+          $content = Get-Content $csproj -Raw
+          $rx = '<Version>\s*([0-9]+(?:\.[0-9]+){0,3})\s*</Version>'
+          $m = [regex]::Match($content, $rx)
+          if (-not $m.Success) { throw "No <Version> element found in $csproj" }
+
+          $parts = @($m.Groups[1].Value.Split('.') | ForEach-Object { [int]$_ })
+          while ($parts.Count -lt 4) { $parts += 0 }
+          $i = $idx[$bump]
+          $parts[$i] = $parts[$i] + 1
+          for ($j = $i + 1; $j -lt 4; $j++) { $parts[$j] = 0 }
+          $new = ($parts -join '.')
+
+          $content = [regex]::Replace($content, $rx, "<Version>$new</Version>")
+          [System.IO.File]::WriteAllText((Resolve-Path $csproj).Path, $content)
+
+          Write-Host "Bumped $bump : $($m.Groups[1].Value) -> $new"
+          "version=$new"   >> $env:GITHUB_OUTPUT
+          "csproj=$csproj" >> $env:GITHUB_OUTPUT
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download Dalamud (needed to build)
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+      - name: Build
+        run: dotnet build AnoMech/AnoMech.sln --configuration Release
+
+      - name: Commit version bump
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: ${{ steps.bump.outputs.csproj }}
+          message: Bump AnoMech to v${{ steps.bump.outputs.version }}
+          author_name: GitHub Action
+          author_email: github-actions[bot]@users.noreply.github.com
+          default_author: user_info
+
+      - name: Resolve output paths
+        id: meta
+        shell: pwsh
+        run: |
+          $dir = "AnoMech/bin/Release/AnoMech"
+          "manifest=$(Join-Path $dir "AnoMech.json")" >> $env:GITHUB_OUTPUT
+          "zip=$dir/latest.zip"                        >> $env:GITHUB_OUTPUT
+
+      - name: Package plugin zip
+        shell: pwsh
+        run: |
+          $dir = "AnoMech/bin/Release/AnoMech"
+          Compress-Archive -Path "$dir\*" -DestinationPath "$dir\latest.zip" -Force
+
+      - name: Stage plugin package into plugins/AnoMech
+        shell: pwsh
+        run: |
+          $dest = "plugins/AnoMech"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Copy-Item "${{ steps.meta.outputs.manifest }}" "$dest/AnoMech.json" -Force
+          Copy-Item "${{ steps.meta.outputs.zip }}" "$dest/latest.zip" -Force
+
+      - name: Regenerate Dalamud repo manifest (pluginmaster.json)
+        shell: pwsh
+        run: python generate_pluginmaster.py
+
+      - name: Commit plugin package + manifest
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: |
+            plugins/AnoMech/AnoMech.json
+            plugins/AnoMech/latest.zip
+            pluginmaster.json
+          message: Release AnoMech v${{ steps.bump.outputs.version }}
+          author_name: GitHub Action
+          author_email: github-actions[bot]@users.noreply.github.com
+          default_author: user_info
+
+      - name: Find previous release tag
+        id: prevtag
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $prev = (gh release view --json tagName --jq '.tagName' 2>$null)
+          if (-not $prev) { $prev = '' }
+          "tag=$prev" >> $env:GITHUB_OUTPUT
+          exit 0
+
+      - name: Build changelog (PRs + commits)
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v6
+        with:
+          mode: HYBRID
+          fromTag: ${{ steps.prevtag.outputs.tag }}
+          toTag: ${{ github.sha }}
+          failOnError: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Create release (this repo)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          name: v${{ steps.bump.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: plugins/AnoMech/latest.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
