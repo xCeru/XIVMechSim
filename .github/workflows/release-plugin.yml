@@ -82,15 +82,21 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          $dir = "AnoMech/bin/Release"
+          # Find where dotnet build actually placed AnoMech.dll
+          $dll = Get-ChildItem -Recurse -Filter "AnoMech.dll" | Where-Object { $_.DirectoryName -match "bin/Release" } | Select-Object -First 1
+          if (-not $dll) { throw "AnoMech.dll not found after build" }
+          $dir = $dll.DirectoryName
+          Write-Host "Build output dir: $dir"
+          "dir=$dir" >> $env:GITHUB_OUTPUT
           "manifest=$dir/AnoMech.json" >> $env:GITHUB_OUTPUT
           "zip=$dir/latest.zip"        >> $env:GITHUB_OUTPUT
 
       - name: Package plugin zip
         shell: pwsh
         run: |
-          $dir = "AnoMech/bin/Release"
-          Get-ChildItem $dir -File | Compress-Archive -DestinationPath "$dir\latest.zip" -Force
+          $dir = "${{ steps.meta.outputs.dir }}"
+          Get-ChildItem $dir -File | Where-Object { $_.Name -ne "latest.zip" } |
+            Compress-Archive -DestinationPath "$dir\latest.zip" -Force
 
       - name: Stage plugin package into plugins/AnoMech
         shell: pwsh
