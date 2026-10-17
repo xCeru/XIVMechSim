@@ -23,7 +23,15 @@ While simulating:
 
 ## Installation
 
-See: https://github.com/anomek/MyDalamudPlugins
+See: installation.md
+
+Short version: add this custom repository in Dalamud Settings → Experimental → Custom Plugin Repositories:
+
+```
+https://raw.githubusercontent.com/xCeru/XIVMechSim/master/pluginmaster.json
+```
+
+Then install AnoMech via `/xlplugins`.
 
 ## Beta: Advanced Simulation Resolution
 
