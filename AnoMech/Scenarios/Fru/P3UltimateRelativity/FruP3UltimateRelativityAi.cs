@@ -10,7 +10,7 @@ namespace AnoMech.Scenarios.Fru.P3UltimateRelativity;
 
 public sealed class FruP3UltimateRelativityAi : IScenarioAi<FruP3UltimateRelativityState>
 {
-    public string Name => "NA";
+    public string Name => "NAUR";
     public string Group => "NA";
 
     private const float S = 1f / 2.358f;

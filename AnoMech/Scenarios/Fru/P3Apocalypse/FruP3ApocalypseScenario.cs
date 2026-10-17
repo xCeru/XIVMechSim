@@ -17,7 +17,7 @@ public sealed class FruP3ApocalypseScenario : IScenario
     public string Name => "Apocalypse";
     public IPhase Phase => FruZone.P3;
 
-    public IReadOnlyList<IScenarioAi> AiStrats => [new FruP3ApocalypseAi()];
+    public IReadOnlyList<IScenarioAi> AiStrats => [new FruP3ApocalypseAi(), new FruP3ApocalypseAiLpdu()];
 
     public void DrawSettings() => settingsWindow.Draw();
     public object SettingsOverrides => settingsWindow.Overrides;

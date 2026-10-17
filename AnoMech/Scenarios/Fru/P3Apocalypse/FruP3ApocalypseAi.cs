@@ -11,7 +11,7 @@ namespace AnoMech.Scenarios.Fru.P3Apocalypse;
 
 public sealed class FruP3ApocalypseAi : IScenarioAi<FruP3ApocalypseState>
 {
-    public string Name => "NA priority / static spreads / OT bait";
+    public string Name => "NAUR";
     public string Group => "NA";
 
     private const float Scale = 20f / 47.4f;
