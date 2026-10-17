@@ -17,7 +17,9 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
     private const float S = 1f / 2.358f;
 
     // EU West-to-East priority per FRU-Sim EU_JP_WE_PRIO: t1, t2, h1, h2, m1, m2, r1, r2
-    private static readonly PartyRole[] EuWePrio = [PartyRole.MainTank, PartyRole.OffTank, PartyRole.ShieldHealer, PartyRole.RegenHealer, PartyRole.MeleeDpsA, PartyRole.MeleeDpsB, PartyRole.PhysRangedDps, PartyRole.CasterDps];
+    private static readonly PartyRole[] EuWePrio =
+        [PartyRole.MainTank, PartyRole.OffTank, PartyRole.ShieldHealer, PartyRole.RegenHealer,
+         PartyRole.MeleeDpsA, PartyRole.MeleeDpsB, PartyRole.PhysRangedDps, PartyRole.CasterDps];
 
     private FruP4DarklitDragonsongState state = null!;
     private SimWorld world = null!;
@@ -32,7 +34,7 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
         swapped = SwapFreeWaterToItsGroupEu();
         somberTank = ChooseSomberTank();
         var ai = new AiManager(world);
-        ai.Move(2f, () => ByRole(Middle), arrivalTime: 6.6f);
+        ai.Move(2f, () => ByRole(MiddleEu), arrivalTime: 6.6f);
         ai.Move(6.65f, () => ByRole(OpeningSpreadEu), arrivalTime: 8.8f);
         ai.Move(14.5f, () => ByRole(LineupEu), arrivalTime: 24.2f);
         ai.Move(24.2f, () => ByRole(role => BowtieEu(role, state.LineupOrder.ToArray())), arrivalTime: 28.2f);
@@ -46,8 +48,6 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
         ai.Move(50.15f, () => ByRole(AkhMornEu), arrivalTime: 57.7f);
     }
 
-    // EU water swap: applies EU_JP_WE_PRIO (tanks first, then healers, then DPS) when deciding
-    // which side the free water swaps to, instead of NAUR's healer-first order.
     private PartyRole[] SwapFreeWaterToItsGroupEu()
     {
         var after = state.LineupOrder.ToArray();
@@ -88,57 +88,72 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
     private static Vector3 Quadrant(int index, float north, float east)
         => FromSim(index % 4 < 2 ? north : -north, index % 4 is 1 or 2 ? east : -east);
 
-    // EU W/E index: position within EU_JP_WE_PRIO ordering (tanks 0-1, healers 2-3, melee 4-5, ranged 6-7).
     private int EuIndex(PartyRole role) => Array.IndexOf(EuWePrio, role);
-
     private bool EuNorth(PartyRole role) => EuIndex(role) < 4;
 
-    private static Vector3? Middle(PartyRole role) => FromSim((int)role % 2 * 0.3f, (int)role * 0.08f);
-
-    // EU opening spread: tanks/healers (West side) and DPS (East side) use EU_JP_WE_PRIO ordering.
+    // EU opening spread (POST_AA_PARTY_EU): tanks west, healers north, DPS south per EU_JP_WE_PRIO.
     private Vector3? OpeningSpreadEu(PartyRole role) => role switch
     {
-        PartyRole.MainTank => FromSim(16.4f, 10.1f),
-        PartyRole.OffTank => FromSim(10.1f, 16.4f),
-        PartyRole.RegenHealer => FromSim(10.1f, -16.4f),
-        PartyRole.ShieldHealer => FromSim(16.4f, -10.1f),
-        PartyRole.MeleeDpsA => FromSim(-16.4f, 10.1f),
-        PartyRole.MeleeDpsB => FromSim(-10.1f, 16.4f),
-        PartyRole.PhysRangedDps => FromSim(-10.1f, -16.4f),
-        _ => FromSim(-16.4f, -10.1f),
+        PartyRole.MainTank => FromSim(3.0f, -19.0f),
+        PartyRole.OffTank => FromSim(-3.0f, -19.0f),
+        PartyRole.ShieldHealer => FromSim(19.0f, -3.0f),
+        PartyRole.RegenHealer => FromSim(19.0f, 3.0f),
+        PartyRole.MeleeDpsA => FromSim(-19.0f, -3.0f),
+        PartyRole.MeleeDpsB => FromSim(-19.0f, 3.0f),
+        PartyRole.PhysRangedDps => FromSim(-16.4f, 10.1f),
+        _ => FromSim(-3.0f, 19.0f),
     };
 
+    // EU LR pre-pos (LR_PARTY_EU after S_OFFSET).
     private Vector3? LineupEu(PartyRole role) => role switch
     {
-        PartyRole.MainTank => FromSim(4.5f, 5),
-        PartyRole.OffTank => FromSim(0.2f, 11.3f),
-        PartyRole.RegenHealer => FromSim(0.2f, -11.3f),
-        PartyRole.ShieldHealer => FromSim(4.5f, -5),
-        PartyRole.MeleeDpsA => FromSim(-25.5f, 5),
-        PartyRole.MeleeDpsB => FromSim(-21.2f, 11.3f),
-        PartyRole.PhysRangedDps => FromSim(-21.2f, -11.3f),
-        _ => FromSim(-25.5f, -5),
+        PartyRole.MainTank => FromSim(-13.5f, -19.0f),
+        PartyRole.OffTank => FromSim(-7.5f, -19.0f),
+        PartyRole.ShieldHealer => FromSim(8.5f, -3.0f),
+        PartyRole.RegenHealer => FromSim(8.5f, 3.0f),
+        PartyRole.MeleeDpsA => FromSim(-29.7f, -2.2f),
+        PartyRole.MeleeDpsB => FromSim(-29.2f, 5.4f),
+        PartyRole.PhysRangedDps => FromSim(-24.2f, 13.7f),
+        _ => FromSim(-15.9f, 18.7f),
     };
 
-    // EU bowtie: positions assigned by EU W/E index rather than NAUR lineup order.
+    private static Vector3? MiddleEu(PartyRole role) => FromSim((int)role % 2 * 0.3f, (int)role * 0.08f);
+
+    // Bowtie positions are identical for NA and EU; mapped by lineup index.
     private Vector3? BowtieEu(PartyRole role, PartyRole[] order)
     {
         var index = Array.IndexOf(order, role);
         return index < 4 ? Quadrant(index, 19, 5.2f) : Quadrant(index, 6.7f, 14.6f);
     }
 
+    // EU Spirit spread (SPIRIT_DD_EU): static bait positions, tethers at SP_TETHER quadrants.
     private Vector3? SpiritTakerSpreadEu(PartyRole role)
     {
         var index = Array.IndexOf(swapped, role);
         if (index < 4) return Quadrant(index, 19, 17.2f);
-        var west = index is 4 or 7;
-        return FromSim(0, west ? ((int)role < 4 ? -38 : -19) : ((int)role < 4 ? 19 : 0));
+        return index switch
+        {
+            4 => FromSim(0, -38f),   // nw_bait -> SP_W_SUP
+            5 => FromSim(0, 0f),     // ne_bait -> SP_E_DPS
+            6 => FromSim(0, 19f),    // se_bait -> SP_E_SUP
+            _ => FromSim(0, -19f),   // sw_bait -> SP_W_DPS
+        };
     }
 
+    // Water stacks (WATER_E_DD / WATER_W_DD): same coordinates for NA and EU.
     private Vector3? WaterStackEu(PartyRole role)
-        => FromSim(EuNorth(role) ? 17.3f : -17.3f, state.EastWing ? -15.5f : 15.5f) + Middle(role)!.Value * 0.3f;
+    {
+        var north = Array.IndexOf(swapped, role) % 4 < 2 ? 17.3f : -17.3f;
+        var east = state.EastWing ? -15.5f : 15.5f;
+        return FromSim(north, east) + MiddleEu(role)!.Value * 0.3f;
+    }
 
-    private Vector3? DancePartyEu(PartyRole role) => FromSim(EuNorth(role) ? 15 : -15, 0) + Middle(role)!.Value * 0.3f;
+    // Somber Dance stacks (DANCE_E_DD / DANCE_W_DD): same coordinates for NA and EU.
+    private Vector3? DancePartyEu(PartyRole role)
+    {
+        var north = Array.IndexOf(swapped, role) % 4 < 2 ? 15f : -15f;
+        return FromSim(north, 0f) + MiddleEu(role)!.Value * 0.3f;
+    }
 
     private static Vector3? AkhMornEu(PartyRole role) => role == PartyRole.MainTank ? new Vector3(-9.3f, 0, 0) : Vector3.Zero;
 
