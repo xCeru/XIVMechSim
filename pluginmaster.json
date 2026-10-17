@@ -1,0 +1,33 @@
+[
+    {
+        "Author": "Anomek",
+        "Name": "AnoMech",
+        "Punchline": "Another FFXIV mechanics simulator. Go to an inn and start practice.",
+        "Description": "Spawns fake party members and bosses client-side so you can practice raid mechanics without a full party.",
+        "InternalName": "AnoMech",
+        "AssemblyVersion": "0.5.1.0",
+        "RepoUrl": "https://github.com/xCeru/XIVMechSim",
+        "Tags": [
+            "top",
+            "umad",
+            "dmu",
+            "kefka",
+            "omega",
+            "protocol",
+            "ultimate",
+            "practice",
+            "simulator"
+        ],
+        "DalamudApiLevel": 15,
+        "IconUrl": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/images/icon.png",
+        "Changelog": "P3: added NAUR/LPDU strat choice with LPDU bot AI for Ultimate Relativity and Apocalypse.",
+        "DownloadLinkInstall": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/plugins/AnoMech/latest.zip",
+        "IsHide": false,
+        "IsTestingExclusive": false,
+        "ApplicableVersion": "any",
+        "DownloadLinkTesting": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/plugins/AnoMech/latest.zip",
+        "DownloadLinkUpdate": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/plugins/AnoMech/latest.zip",
+        "DownloadCount": 0,
+        "LastUpdate": "1792242734"
+    }
+]
