@@ -14,7 +14,7 @@ on:
           - revision
 
 permissions:
-  contents: write   # commit version bump + manifest, create release in THIS repo
+  contents: write
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -35,26 +35,21 @@ jobs:
           $csproj = "AnoMech/AnoMech.csproj"
           $bump = "${{ inputs.version_bump }}".ToLower()
           $idx = @{ 'major' = 0; 'minor' = 1; 'patch' = 2; 'revision' = 3 }
-          if (-not $idx.ContainsKey($bump)) { throw "Invalid version_bump '$bump' (use major|minor|patch|revision)" }
-
+          if (-not $idx.ContainsKey($bump)) { throw "Invalid version_bump '$bump'" }
           $content = Get-Content $csproj -Raw
           $rx = '<Version>\s*([0-9]+(?:\.[0-9]+){0,3})\s*</Version>'
           $m = [regex]::Match($content, $rx)
           if (-not $m.Success) { throw "No <Version> element found in $csproj" }
-
           $parts = @($m.Groups[1].Value.Split('.') | ForEach-Object { [int]$_ })
           while ($parts.Count -lt 4) { $parts += 0 }
           $i = $idx[$bump]
           $parts[$i] = $parts[$i] + 1
           for ($j = $i + 1; $j -lt 4; $j++) { $parts[$j] = 0 }
           $new = ($parts -join '.')
-
           $content = [regex]::Replace($content, $rx, "<Version>$new</Version>")
           [System.IO.File]::WriteAllText((Resolve-Path $csproj).Path, $content)
-
           Write-Host "Bumped $bump : $($m.Groups[1].Value) -> $new"
-          "version=$new"   >> $env:GITHUB_OUTPUT
-          "csproj=$csproj" >> $env:GITHUB_OUTPUT
+          "version=$new" >> $env:GITHUB_OUTPUT
 
       - name: Install .NET
         uses: actions/setup-dotnet@v5
@@ -66,49 +61,50 @@ jobs:
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
 
-      - name: Build
+      - name: Build solution
         run: dotnet build AnoMech.sln --configuration Release
 
+      # Commit the version bump so the release tag matches the bumped csproj.
       - name: Commit version bump
         uses: EndBug/add-and-commit@v9
         with:
-          add: ${{ steps.bump.outputs.csproj }}
+          add: AnoMech/AnoMech.csproj
           message: Bump AnoMech to v${{ steps.bump.outputs.version }}
-          author_name: GitHub Action
-          author_email: github-actions[bot]@users.noreply.github.com
           default_author: user_info
 
-      - name: Resolve output paths
-        id: meta
+      # Locate the plugin's own build output (exclude tests/ and obj/).
+      - name: Find plugin output directory
+        id: output
         shell: pwsh
         run: |
-          # Find where dotnet build placed the plugin's AnoMech.dll (not the test project's)
           $dll = Get-ChildItem -Recurse -Filter "AnoMech.dll" |
-            Where-Object { $_.DirectoryName -match "AnoMech[\\/]bin[\\/]Release" } |
+            Where-Object { $_.FullName -notlike "*tests*" -and $_.FullName -notlike "*obj*" } |
             Select-Object -First 1
           if (-not $dll) { throw "AnoMech.dll not found after build" }
           $dir = $dll.DirectoryName
-          Write-Host "Build output dir: $dir"
+          Write-Host "Plugin output dir: $dir"
           "dir=$dir" >> $env:GITHUB_OUTPUT
           "manifest=$dir/AnoMech.json" >> $env:GITHUB_OUTPUT
-          "zip=$dir/latest.zip"        >> $env:GITHUB_OUTPUT
 
+      # Package the build output into latest.zip (next to the dll).
       - name: Package plugin zip
         shell: pwsh
         run: |
-          $dir = "${{ steps.meta.outputs.dir }}"
+          $dir = "${{ steps.output.outputs.dir }}"
           Get-ChildItem $dir -File | Where-Object { $_.Name -ne "latest.zip" } |
             Compress-Archive -DestinationPath "$dir\latest.zip" -Force
+          Write-Host "Packaged $dir\latest.zip"
 
+      # Stage the zip + manifest into plugins/AnoMech for the Dalamud repo.
       - name: Stage plugin package into plugins/AnoMech
         shell: pwsh
         run: |
-          $dest = "plugins/AnoMech"
-          New-Item -ItemType Directory -Force $dest | Out-Null
-          Copy-Item "${{ steps.meta.outputs.manifest }}" "$dest/AnoMech.json" -Force
-          Copy-Item "${{ steps.meta.outputs.zip }}" "$dest/latest.zip" -Force
+          New-Item -ItemType Directory -Force "plugins/AnoMech" | Out-Null
+          Copy-Item "${{ steps.output.outputs.manifest }}" "plugins/AnoMech/AnoMech.json" -Force
+          Copy-Item "${{ steps.output.outputs.dir }}\latest.zip" "plugins/AnoMech/latest.zip" -Force
 
-      - name: Regenerate Dalamud repo manifest (pluginmaster.json)
+      # Regenerate pluginmaster.json (no GitHub API / PAT needed).
+      - name: Regenerate Dalamud repo manifest
         shell: pwsh
         run: python generate_pluginmaster.py
 
@@ -120,40 +116,15 @@ jobs:
             plugins/AnoMech/latest.zip
             pluginmaster.json
           message: Release AnoMech v${{ steps.bump.outputs.version }}
-          author_name: GitHub Action
-          author_email: github-actions[bot]@users.noreply.github.com
           default_author: user_info
 
-      - name: Find previous release tag
-        id: prevtag
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $prev = (gh release view --json tagName --jq '.tagName' 2>$null)
-          if (-not $prev) { $prev = '' }
-          "tag=$prev" >> $env:GITHUB_OUTPUT
-          exit 0
-
-      - name: Build changelog (PRs + commits)
-        id: changelog
-        uses: mikepenz/release-changelog-builder-action@v6
-        with:
-          mode: HYBRID
-          fromTag: ${{ steps.prevtag.outputs.tag }}
-          toTag: ${{ github.sha }}
-          failOnError: false
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Create release (this repo)
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.bump.outputs.version }}
           name: v${{ steps.bump.outputs.version }}
           target_commitish: ${{ github.sha }}
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: Release v${{ steps.bump.outputs.version }} — see installation.md for install instructions.
           files: plugins/AnoMech/latest.zip
-          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
