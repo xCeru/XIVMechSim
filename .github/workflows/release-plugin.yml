@@ -82,8 +82,10 @@ jobs:
         id: meta
         shell: pwsh
         run: |
-          # Find where dotnet build actually placed AnoMech.dll
-          $dll = Get-ChildItem -Recurse -Filter "AnoMech.dll" | Where-Object { $_.DirectoryName -match "bin[\\/]Release" } | Select-Object -First 1
+          # Find where dotnet build placed the plugin's AnoMech.dll (not the test project's)
+          $dll = Get-ChildItem -Recurse -Filter "AnoMech.dll" |
+            Where-Object { $_.DirectoryName -match "AnoMech[\\/]bin[\\/]Release" } |
+            Select-Object -First 1
           if (-not $dll) { throw "AnoMech.dll not found after build" }
           $dir = $dll.DirectoryName
           Write-Host "Build output dir: $dir"
