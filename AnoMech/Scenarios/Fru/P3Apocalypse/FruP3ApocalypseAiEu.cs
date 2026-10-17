@@ -9,15 +9,11 @@ using static AnoMech.Scenarios.Fru.P3Apocalypse.FruP3ApocalypseState;
 
 namespace AnoMech.Scenarios.Fru.P3Apocalypse;
 
-public sealed class FruP3ApocalypseAiLpdu : IScenarioAi<FruP3ApocalypseState>
+public sealed class FruP3ApocalypseAiEu : IScenarioAi<FruP3ApocalypseState>
 {
     public string Name => "LPDU";
-    public string Group => "NA";
+    public string Group => "EU";
 
-    // FRU-Sim treats NAUR and LPDU identically for P3 Apocalypse (both use the same static
-    // square setup and adjust priorities), so LPDU mirrors the NAUR choreography. Kept as a
-    // separate strat so the user can select it and the two can diverge later without touching
-    // the shared fight logic (timeline, spawns, VFX) which stays in the scenario.
     private const float Scale = 20f / 47.4f;
 
     private FruP3ApocalypseState state = null!;
@@ -31,11 +27,11 @@ public sealed class FruP3ApocalypseAiLpdu : IScenarioAi<FruP3ApocalypseState>
         // Freepoc keeps static (unadjusted) positions; Permaswap applies the water-group swap.
         if (state.Swap) AdjustWaterGroups();
         var ai = new AiManager(world);
-        ai.Move(2.2f, () => ByRole(role => Setup(role, adjusted: false)), arrivalTime: 12.3f);
-        ai.Move(16.9f, () => ByRole(role => Setup(role)), arrivalTime: 20.2f);
-        ai.Move(20.2f, () => ByRole(FirstStack), arrivalTime: WaterAt(1));
-        ai.Move(22.85f, () => ByRole(role => Setup(role, spread: true)), arrivalTime: 24.8f);
-        ai.Move(24.85f, () => ByRole(role => Setup(role, adjusted: false, spread: true)), arrivalTime: 28f);
+        ai.Move(2.2f, () => ByRole(role => SetupEu(role, adjusted: false)), arrivalTime: 12.3f);
+        ai.Move(16.9f, () => ByRole(role => SetupEu(role)), arrivalTime: 20.2f);
+        ai.Move(20.2f, () => ByRole(FirstStackEu), arrivalTime: WaterAt(1));
+        ai.Move(22.85f, () => ByRole(role => SetupEu(role, spread: true)), arrivalTime: 24.8f);
+        ai.Move(24.85f, () => ByRole(role => SetupEu(role, adjusted: false, spread: true)), arrivalTime: 28f);
         ai.Move(28f, () => ByRole(Spread), arrivalTime: WaveAt(0));
         ai.Move(36.05f, () => ByRole(PostEruption));
         ai.Move(37f, () => ByRole(SecondStack), arrivalTime: WaveAt(3));
@@ -71,17 +67,28 @@ public sealed class FruP3ApocalypseAiLpdu : IScenarioAi<FruP3ApocalypseState>
         return new Vector3(x * MathF.Sin(angle) + z * MathF.Cos(angle), 0, -x * MathF.Cos(angle) + z * MathF.Sin(angle)) * Scale;
     }
 
-    private Vector3? Setup(PartyRole role, bool adjusted = true, bool spread = false)
+    // EU setup positions (NW/SE diagonal square per FRU-Sim ROLE_SETUP_EU).
+    // Slot 0-3 = support side (NW quadrant), slot 4-7 = DPS side (SE quadrant).
+    private Vector3? SetupEu(PartyRole role, bool adjusted = true, bool spread = false)
     {
         var slot = Slot(role, adjusted);
-        var support = slot < 4;
-        var local = slot % 4;
-        var x = (local % 2 == 0 ? 1 : -1) * (support ? 1 : -1) * (spread ? 8 : 4);
-        var z = (support ? -1 : 1) * (spread ? (local < 2 ? 9 : 27) : (local < 2 ? 8 : 16));
-        return Reference(x, z);
+        return slot switch
+        {
+            0 => Reference(15.8f, -7.1f),   // MT - close NW
+            1 => Reference(7.1f, -15.8f),   // OT - close NW
+            2 => Reference(25f, -16.2f),    // SH - far NW
+            3 => Reference(16.2f, -25f),    // RH - far NW
+            4 => Reference(-15.8f, 7.1f),   // MDPS A - close SE
+            5 => Reference(-7.1f, 15.8f),   // MDPS B - close SE
+            6 => Reference(-25f, 16.2f),    // PRDPS - far SE
+            _ => Reference(-16.2f, 25f),    // CRDPS - far SE
+        };
     }
 
-    private Vector3? FirstStack(PartyRole role) => Reference(0, SupportGroup(role) ? -12 : 12);
+    // EU stack positions (STACK_1_EU): supports NW, DPS SE.
+    private Vector3? FirstStackEu(PartyRole role) => SupportGroup(role)
+        ? Reference(15.3f, -15.5f)
+        : Reference(-15.3f, 15.5f);
 
     private Vector3? Spread(PartyRole role)
     {
