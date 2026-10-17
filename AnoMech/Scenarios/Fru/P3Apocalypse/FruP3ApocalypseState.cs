@@ -24,6 +24,8 @@ public sealed class FruP3ApocalypseState
     // Eighths of a turn from north where the first lights go up.
     public int Rotation { get; }
     public bool Clockwise { get; }
+    // Resolved per-run: true = Permaswap (keep water-group swaps), false = Freepoc (static positions).
+    public bool Swap { get; }
     // Indexed by PartyRole: 0 = no Dark Water, else its duration slot 1-3.
     public IReadOnlyList<int> WaterDurations { get; }
     public PartyRole SpiritTakerTarget { get; }
@@ -32,6 +34,7 @@ public sealed class FruP3ApocalypseState
     {
         Rotation = overrides.Rotation ?? rng.Next(4);
         Clockwise = overrides.Clockwise ?? rng.NextBool();
+        Swap = overrides.Swap ?? rng.NextBool();
         WaterDurations = rng.Shuffle(0, 0, 1, 1, 2, 2, 3, 3).ToList();
         SpiritTakerTarget = overrides.SpiritTakerTarget ?? rng.NextRole();
     }

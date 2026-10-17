@@ -16,6 +16,7 @@ public sealed class FruP3ApocalypseSettingsWindow
             SettingsGrid.FightOnlyNote();
             DrawStart();
             DrawRotation();
+            DrawSwap();
             DrawSpiritTaker();
             SettingsGrid.End();
         }
@@ -25,6 +26,7 @@ public sealed class FruP3ApocalypseSettingsWindow
     {
         Overrides.Rotation = null;
         Overrides.Clockwise = null;
+        Overrides.Swap = null;
         Overrides.SpiritTakerTarget = null;
     }
 
@@ -48,6 +50,17 @@ public sealed class FruP3ApocalypseSettingsWindow
         if (ImGui.RadioButton("CW##apocrot", v == true)) Overrides.Clockwise = true;
         ImGui.SameLine();
         if (ImGui.RadioButton("CCW##apocrot", v == false)) Overrides.Clockwise = false;
+    }
+
+    private void DrawSwap()
+    {
+        var v = Overrides.Swap;
+        SettingsGrid.Row("Water swap:");
+        if (ImGui.RadioButton("Auto##apocswap", v == null)) Overrides.Swap = null;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Freepoc##apocswap", v == false)) Overrides.Swap = false;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Permaswap##apocswap", v == true)) Overrides.Swap = true;
     }
 
     private void DrawSpiritTaker()

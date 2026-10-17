@@ -28,7 +28,8 @@ public sealed class FruP3ApocalypseAiLpdu : IScenarioAi<FruP3ApocalypseState>
     {
         state = stateParam;
         world = worldParam;
-        AdjustWaterGroups();
+        // Freepoc keeps static (unadjusted) positions; Permaswap applies the water-group swap.
+        if (state.Swap) AdjustWaterGroups();
         var ai = new AiManager(world);
         ai.Move(2.2f, () => ByRole(role => Setup(role, adjusted: false)), arrivalTime: 12.3f);
         ai.Move(16.9f, () => ByRole(role => Setup(role)), arrivalTime: 20.2f);

@@ -9,4 +9,6 @@ public sealed class FruP3ApocalypseStateOverrides
     public int? Rotation { get; set; }
     public bool? Clockwise { get; set; }
     public PartyRole? SpiritTakerTarget { get; set; }
+    // Freepoc = static positions after water hit; Permaswap = keep swapped positions.
+    public bool? Swap { get; set; }
 }
