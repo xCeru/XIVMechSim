@@ -17,6 +17,7 @@ public sealed class FruP3ApocalypseSettingsWindow
             DrawStart();
             DrawRotation();
             DrawSwap();
+            DrawForceSwap();
             DrawSpiritTaker();
             SettingsGrid.End();
         }
@@ -28,6 +29,7 @@ public sealed class FruP3ApocalypseSettingsWindow
         Overrides.Clockwise = null;
         Overrides.Swap = null;
         Overrides.SpiritTakerTarget = null;
+        Overrides.ForceSwapTarget = null;
     }
 
     private void DrawStart()
@@ -61,6 +63,19 @@ public sealed class FruP3ApocalypseSettingsWindow
         if (ImGui.RadioButton("Freepoc##apocswap", v == false)) Overrides.Swap = false;
         ImGui.SameLine();
         if (ImGui.RadioButton("Permaswap##apocswap", v == true)) Overrides.Swap = true;
+    }
+
+    private void DrawForceSwap()
+    {
+        var v = Overrides.ForceSwapTarget;
+        SettingsGrid.Row("Force swap:");
+        if (ImGui.RadioButton("Auto##apocforceswap", v == null)) Overrides.ForceSwapTarget = null;
+        foreach (var role in PerRole.All)
+        {
+            ImGui.SameLine();
+            if (ImGui.RadioButton($"{SettingsGrid.RoleLabel(role)}##apocforceswap", v == role))
+                Overrides.ForceSwapTarget = role;
+        }
     }
 
     private void DrawSpiritTaker()

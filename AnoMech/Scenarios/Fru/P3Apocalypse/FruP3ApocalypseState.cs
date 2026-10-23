@@ -35,7 +35,55 @@ public sealed class FruP3ApocalypseState
         Rotation = overrides.Rotation ?? rng.Next(4);
         Clockwise = overrides.Clockwise ?? rng.NextBool();
         Swap = overrides.Swap ?? rng.NextBool();
-        WaterDurations = rng.Shuffle(0, 0, 1, 1, 2, 2, 3, 3).ToList();
+        
+        var durations = rng.Shuffle(0, 0, 1, 1, 2, 2, 3, 3).ToList();
+        
+        // Force swap: make the selected role share a water duration with the lowest
+        // priority player's pair partner in their group, so they swap sides (same logic
+        // as FRU-Sim's force swap).
+        if (overrides.ForceSwapTarget is { } target)
+        {
+            var targetIdx = (int)target;
+            var groupStart = targetIdx < 4 ? 0 : 4;
+            var groupEnd = groupStart + 4;
+            
+            // Lowest priority role in the user's group (Priority is highest-to-lowest).
+            PartyRole? lowestPrio = null;
+            foreach (var role in new[] { PartyRole.ShieldHealer, PartyRole.RegenHealer, PartyRole.OffTank, PartyRole.MainTank,
+                                         PartyRole.MeleeDpsA, PartyRole.MeleeDpsB, PartyRole.PhysRangedDps, PartyRole.CasterDps })
+            {
+                var idx = (int)role;
+                if (idx >= groupStart && idx < groupEnd)
+                {
+                    lowestPrio = role;
+                    break;
+                }
+            }
+            
+            if (lowestPrio is { } lp && (int)lp != targetIdx)
+            {
+                var lpIdx = (int)lp;
+                var targetDuration = durations[targetIdx];
+                
+                // Find target's pair partner (other index with same duration).
+                var targetPartnerIdx = durations.FindIndex(targetIdx + 1, d => d == targetDuration);
+                
+                // Find lp's duration and its pair partner.
+                var lpDuration = durations[lpIdx];
+                var lpPartnerIdx = durations.FindIndex(lpIdx + 1, d => d == lpDuration);
+                
+                if (targetPartnerIdx >= 0 && lpPartnerIdx >= 0)
+                {
+                    // Swap the pair partners' durations: target's partner gets lp's duration,
+                    // lp's partner gets target's partner's duration. Target keeps their duration
+                    // but now shares it with lp's former partner, forcing a swap.
+                    durations[targetPartnerIdx] = lpDuration;
+                    durations[lpPartnerIdx] = targetDuration;
+                }
+            }
+        }
+        
+        WaterDurations = durations;
         SpiritTakerTarget = overrides.SpiritTakerTarget ?? rng.NextRole();
     }
 

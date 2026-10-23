@@ -11,4 +11,7 @@ public sealed class FruP3ApocalypseStateOverrides
     public PartyRole? SpiritTakerTarget { get; set; }
     // Freepoc = static positions after water hit; Permaswap = keep swapped positions.
     public bool? Swap { get; set; }
+    // Force the selected role to swap water groups by sharing a duration with the lowest
+    // priority player in their group (same logic as FRU-Sim's force swap).
+    public PartyRole? ForceSwapTarget { get; set; }
 }
