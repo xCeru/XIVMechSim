@@ -30,8 +30,11 @@ public sealed class FruP3ApocalypseAiEu : IScenarioAi<FruP3ApocalypseState>
         ai.Move(2.2f, () => ByRole(role => SetupEu(role, adjusted: false)), arrivalTime: 12.3f);
         ai.Move(16.9f, () => ByRole(role => SetupEu(role)), arrivalTime: 20.2f);
         ai.Move(20.2f, () => ByRole(FirstStackEu), arrivalTime: WaterAt(1));
+        // Freepoc moves back to static spread positions; Permaswap keeps the swapped positions
+        // for the Apocalypse spread so players resolve from their swapped side.
         ai.Move(22.85f, () => ByRole(role => SetupEu(role, spread: true)), arrivalTime: 24.8f);
-        ai.Move(24.85f, () => ByRole(role => SetupEu(role, adjusted: false, spread: true)), arrivalTime: 28f);
+        if (!state.Swap)
+            ai.Move(24.85f, () => ByRole(role => SetupEu(role, adjusted: false, spread: true)), arrivalTime: 28f);
         ai.Move(28f, () => ByRole(Spread), arrivalTime: WaveAt(0));
         ai.Move(36.05f, () => ByRole(PostEruption));
         ai.Move(37f, () => ByRole(SecondStack), arrivalTime: WaveAt(3));
