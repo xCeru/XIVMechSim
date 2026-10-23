@@ -84,7 +84,7 @@ public sealed class FruP3ApocalypseAi : IScenarioAi<FruP3ApocalypseState>
 
     private Vector3? Spread(PartyRole role)
     {
-        var slot = Slot(role, adjusted: false);
+        var slot = Slot(role);
         var side = slot < 4 ? 1 : -1;
         var (x, z) = (slot % 4) switch
         {
@@ -98,7 +98,7 @@ public sealed class FruP3ApocalypseAi : IScenarioAi<FruP3ApocalypseState>
 
     private Vector3? PostEruption(PartyRole role)
     {
-        var slot = Slot(role, adjusted: false);
+        var slot = Slot(role);
         return Reference((slot < 4 ? 1 : -1) * (slot % 4 < 2 ? 10 : 33), 0, SpreadRotation);
     }
 
