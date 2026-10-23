@@ -26,6 +26,7 @@ public sealed class FruP3ApocalypseAi : IScenarioAi<FruP3ApocalypseState>
         world = worldParam;
         // Freepoc keeps static (unadjusted) positions; Permaswap applies the water-group swap.
         if (state.Swap) AdjustWaterGroups();
+        ForceSwapIfNeeded();
         var ai = new AiManager(world);
         ai.Move(2.2f, () => ByRole(role => Setup(role, adjusted: false)), arrivalTime: 12.3f);
         ai.Move(16.9f, () => ByRole(role => Setup(role)), arrivalTime: 20.2f);
@@ -130,6 +131,31 @@ public sealed class FruP3ApocalypseAi : IScenarioAi<FruP3ApocalypseState>
         var inward = boss.LengthSquared() > 0.01f ? Vector3.Normalize(-boss) : Vector3.UnitZ;
         var right = new Vector3(inward.Z, 0, -inward.X);
         return boss + inward * 2 + right * (SupportGroup(role) ? -4 : 4);
+    }
+
+    // Force Swap: after AdjustWaterGroups, if the target hasn't been swapped to the other side,
+    // swap their slot with their water partner's slot. Same-duration pairs stay on opposite sides
+    // of the arena, but the forced role now resolves from the swapped side.
+    private void ForceSwapIfNeeded()
+    {
+        if (state.ForceSwapTarget is not { } target) return;
+        var targetIdx = (int)target;
+        var targetSlotSide = slots[targetIdx] < 4 ? 0 : 4;
+        var targetHomeSide = targetIdx < 4 ? 0 : 4;
+        if (targetSlotSide != targetHomeSide) return; // already swapped
+
+        // Find target's water partner (same duration, different role)
+        var targetDuration = state.WaterDuration(target);
+        var partnerIdx = -1;
+        for (var i = 0; i < 8; i++)
+            if (i != targetIdx && state.WaterDuration((PartyRole)i) == targetDuration)
+            { partnerIdx = i; break; }
+
+        if (partnerIdx < 0) return;
+
+        // Swap target's slot with partner's slot: both move to opposite sides,
+        // keeping same-duration pairs on opposite sides while forcing target to swap.
+        (slots[targetIdx], slots[partnerIdx]) = (slots[partnerIdx], slots[targetIdx]);
     }
 
     private static IAiMove ByRole(Func<PartyRole, Vector3?> at)
