@@ -5,7 +5,7 @@
         "Punchline": "Another FFXIV mechanics simulator. Go to an inn and start practice.",
         "Description": "Spawns fake party members and bosses client-side so you can practice raid mechanics without a full party.",
         "InternalName": "AnoMech",
-        "AssemblyVersion": "0.5.17.0",
+        "AssemblyVersion": "0.5.18.0",
         "RepoUrl": "https://github.com/anomek/AnoMech",
         "Tags": [
             "top",
@@ -27,6 +27,6 @@
         "DownloadLinkTesting": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/plugins/AnoMech/latest.zip",
         "DownloadLinkUpdate": "https://raw.githubusercontent.com/xCeru/XIVMechSim/master/plugins/AnoMech/latest.zip",
         "DownloadCount": 0,
-        "LastUpdate": "1792795857"
+        "LastUpdate": "1792796050"
     }
 ]
