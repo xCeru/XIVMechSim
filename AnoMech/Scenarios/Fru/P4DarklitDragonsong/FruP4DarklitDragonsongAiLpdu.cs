@@ -167,32 +167,22 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
         };
     }
 
-    // Water stacks: EU supports west, DPS east.
+    // Water stacks: everyone moves to the side opposite the wings (east wing → west side,
+    // west wing → east side). North/south based on swapped index, matching NA behavior.
     private Vector3? WaterStackEu(PartyRole role)
     {
         var index = Array.IndexOf(swapped, role);
-        if (index < 4) return Quadrant(index, 17.3f, state.EastWing ? -15.5f : 15.5f);
-        var north = IsSupport(role) ? 17.3f : -17.3f;
-        var east = IsSupport(role) ? -15.5f : 15.5f;
-        // Within each side, order by EU W/E priority for the offset.
-        var sameSide = swapped.Where(r => IsSupport(r) == IsSupport(role)).OrderBy(EuIndex).ToArray();
-        var offset = Array.IndexOf(sameSide, role) switch
-        {
-            0 => FromSim(0, 0.7f * S),
-            1 => FromSim(0, -0.7f * S),
-            _ => Vector3.Zero,
-        };
-        return FromSim(north, east) + MiddleEu(role)!.Value * 0.3f + offset;
+        var north = index % 4 < 2 ? 17.3f : -17.3f;
+        var east = state.EastWing ? -15.5f : 15.5f;
+        return FromSim(north, east) + MiddleEu(role)!.Value * 0.3f;
     }
 
-    // Somber Dance stacks: EU supports west, DPS east.
+    // Somber Dance stacks: everyone goes north or south based on swapped index, no wing flip.
     private Vector3? DancePartyEu(PartyRole role)
     {
         var index = Array.IndexOf(swapped, role);
-        if (index < 4) return Quadrant(index, 15, 0);
-        var north = IsSupport(role) ? 15f : -15f;
-        var east = IsSupport(role) ? -7.5f : 7.5f;
-        return FromSim(north, east) + MiddleEu(role)!.Value * 0.3f;
+        var north = index % 4 < 2 ? 15f : -15f;
+        return FromSim(north, 0f) + MiddleEu(role)!.Value * 0.3f;
     }
 
     private static Vector3? AkhMornEu(PartyRole role) => role == PartyRole.MainTank ? new Vector3(-9.3f, 0, 0) : Vector3.Zero;
