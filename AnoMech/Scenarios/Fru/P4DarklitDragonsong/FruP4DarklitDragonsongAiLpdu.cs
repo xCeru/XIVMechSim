@@ -131,39 +131,26 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
 
     private static Vector3? MiddleEu(PartyRole role) => FromSim((int)role % 2 * 0.3f, (int)role * 0.08f);
 
-    // EU bowtie: non-tethered players (indices 4-7) split supports west (NW/SW) and DPS east
-    // (NE/SE), ordered by EU W/E priority. Tethered players (indices 0-3) keep NA bowtie positions.
+    // EU bowtie: positions are identical to NA; mapped by lineup index (post-water-swap).
+    // Tethered players (indices 0-3) → TOWER quadrants; non-tethers (indices 4-7) → BAIT quadrants.
     private Vector3? BowtieEu(PartyRole role, PartyRole[] order)
     {
         var index = Array.IndexOf(order, role);
-        if (index < 4) return Quadrant(index, 19, 5.2f);
-
-        // Non-tethered: split by support vs DPS, then order by EU W/E priority within each side.
-        var nonTethers = order.Skip(4).Take(4).ToArray();
-        var supports = nonTethers.Where(IsSupport).OrderBy(EuIndex).ToArray();
-        var dps = nonTethers.Where(r => !IsSupport(r)).OrderBy(EuIndex).ToArray();
-
-        // NW = first support, SW = second support, NE = first DPS, SE = second DPS.
-        return role switch
-        {
-            _ when role == supports[0] => Quadrant(0, 6.7f, 14.6f), // NW
-            _ when role == supports[1] => Quadrant(3, 6.7f, 14.6f), // SW
-            _ when role == dps[0] => Quadrant(1, 6.7f, 14.6f),     // NE
-            _ => Quadrant(2, 6.7f, 14.6f),                          // SE
-        };
+        return index < 4 ? Quadrant(index, 19, 5.2f) : Quadrant(index, 6.7f, 14.6f);
     }
 
-    // EU Spirit spread (SPIRIT_DD_EU): static bait positions, tethers at SP_TETHER quadrants.
+    // EU Spirit spread (SPIRIT_DD_EU): tethers at SP_TETHER quadrants; non-tethers at static bait positions.
+    // nw_bait→SP_W_SUP, ne_bait→SP_E_SUP, se_bait→SP_E_DPS, sw_bait→SP_W_DPS (per FRU-Sim EU).
     private Vector3? SpiritTakerSpreadEu(PartyRole role)
     {
         var index = Array.IndexOf(swapped, role);
         if (index < 4) return Quadrant(index, 19, 17.2f);
         return index switch
         {
-            4 => FromSim(0, -38f),   // nw_bait -> SP_W_SUP
-            5 => FromSim(0, 0f),     // ne_bait -> SP_E_DPS
-            6 => FromSim(0, 19f),    // se_bait -> SP_E_SUP
-            _ => FromSim(0, -19f),   // sw_bait -> SP_W_DPS
+            4 => FromSim(0, -38f),   // nw_bait → SP_W_SUP
+            5 => FromSim(0, 19f),    // ne_bait → SP_E_SUP
+            6 => FromSim(0, 0f),     // se_bait → SP_E_DPS
+            _ => FromSim(0, -19f),   // sw_bait → SP_W_DPS
         };
     }
 
