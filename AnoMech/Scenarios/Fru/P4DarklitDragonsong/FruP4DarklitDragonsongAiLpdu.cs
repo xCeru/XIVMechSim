@@ -131,26 +131,47 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
 
     private static Vector3? MiddleEu(PartyRole role) => FromSim((int)role % 2 * 0.3f, (int)role * 0.08f);
 
-    // EU bowtie: positions are identical to NA; mapped by lineup index (post-water-swap).
-    // Tethered players (indices 0-3) → TOWER quadrants; non-tethers (indices 4-7) → BAIT quadrants.
+    // EU bowtie: non-tethered players (indices 4-7) split supports west (NW/SW = left)
+    // and DPS east (NE/SE = right), ordered by EU W/E priority within each side.
+    // Tethered players (indices 0-3) keep NA bowtie positions.
     private Vector3? BowtieEu(PartyRole role, PartyRole[] order)
     {
         var index = Array.IndexOf(order, role);
-        return index < 4 ? Quadrant(index, 19, 5.2f) : Quadrant(index, 6.7f, 14.6f);
+        if (index < 4) return Quadrant(index, 19, 5.2f);
+
+        // Non-tethered: split by support vs DPS, order by EU W/E priority within each side.
+        var nonTethers = order.Skip(4).Take(4).ToArray();
+        var supports = nonTethers.Where(IsSupport).OrderBy(EuIndex).ToArray();
+        var dps = nonTethers.Where(r => !IsSupport(r)).OrderBy(EuIndex).ToArray();
+
+        // NW = first support, SW = second support (west / left)
+        // NE = first DPS, SE = second DPS (east / right)
+        return role switch
+        {
+            _ when role == supports[0] => Quadrant(0, 6.7f, 14.6f), // NW
+            _ when role == supports[1] => Quadrant(3, 6.7f, 14.6f), // SW
+            _ when role == dps[0] => Quadrant(1, 6.7f, 14.6f),     // NE
+            _ => Quadrant(2, 6.7f, 14.6f),                          // SE
+        };
     }
 
     // EU Spirit spread (SPIRIT_DD_EU): tethers at SP_TETHER quadrants; non-tethers at static bait positions.
-    // nw_bait→SP_W_SUP, ne_bait→SP_E_SUP, se_bait→SP_E_DPS, sw_bait→SP_W_DPS (per FRU-Sim EU).
+    // Supports go west (SP_W_SUP far, SP_W_DPS mid), DPS go east (SP_E_DPS center, SP_E_SUP mid) per FRU-Sim EU.
     private Vector3? SpiritTakerSpreadEu(PartyRole role)
     {
         var index = Array.IndexOf(swapped, role);
         if (index < 4) return Quadrant(index, 19, 17.2f);
-        return index switch
+
+        var nonTethers = swapped.Skip(4).Take(4).ToArray();
+        var supports = nonTethers.Where(IsSupport).OrderBy(EuIndex).ToArray();
+        var dps = nonTethers.Where(r => !IsSupport(r)).OrderBy(EuIndex).ToArray();
+
+        return role switch
         {
-            4 => FromSim(0, -38f),   // nw_bait → SP_W_SUP
-            5 => FromSim(0, 19f),    // ne_bait → SP_E_SUP
-            6 => FromSim(0, 0f),     // se_bait → SP_E_DPS
-            _ => FromSim(0, -19f),   // sw_bait → SP_W_DPS
+            _ when role == supports[0] => FromSim(0, -38f),   // SP_W_SUP - far west support
+            _ when role == supports[1] => FromSim(0, -19f),   // SP_W_DPS - mid west support
+            _ when role == dps[0] => FromSim(0, 0f),          // SP_E_DPS - center/east DPS
+            _ => FromSim(0, 19f),                             // SP_E_SUP - mid east DPS
         };
     }
 
