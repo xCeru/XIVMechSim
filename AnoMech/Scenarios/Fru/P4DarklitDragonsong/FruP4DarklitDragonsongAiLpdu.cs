@@ -48,24 +48,17 @@ public sealed class FruP4DarklitDragonsongAiLpdu : IScenarioAi<FruP4DarklitDrago
         ai.Move(50.15f, () => ByRole(AkhMornEu), arrivalTime: 57.7f);
     }
 
-    // EU water swap: applies EU_JP_WE_PRIO when deciding which side the free water swaps to,
-    // so the forced/swapped player ends up on the correct side per EU priority.
+    // EU water swap: applies EU_JP_WE_PRIO when deciding which side the free water swaps to.
+    // If both waters are on the same N/S side, they swap so they end up on opposite sides.
     private PartyRole[] SwapFreeWaterToItsGroupEu()
     {
         var after = state.LineupOrder.ToArray();
+        // Only swap when both waters are on the same side (both north or both south).
         if ((state.TetherWaterIndex < 2) == (state.FreeWaterIndex < 2))
         {
             var freeIdx = 4 + state.FreeWaterIndex;
-            var freeRole = after[freeIdx];
             var partnerIdx = 4 + 3 - state.FreeWaterIndex;
-            // Only swap if they're on the same N/S side (both north or both south).
-            var freeNorth = freeIdx < 6; // indices 4,5 are north; 6,7 are south
-            var partnerNorth = partnerIdx < 6;
-            if (freeNorth == partnerNorth)
-            {
-                // Swap based on EU W/E priority: lower priority index moves to the other side.
-                (after[freeIdx], after[partnerIdx]) = (after[partnerIdx], after[freeIdx]);
-            }
+            (after[freeIdx], after[partnerIdx]) = (after[partnerIdx], after[freeIdx]);
         }
         return after;
     }
