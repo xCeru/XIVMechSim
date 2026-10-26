@@ -47,7 +47,9 @@ public sealed class FruP4DarklitDragonsongAi(bool playerBaitsSomberDance) : ISce
     {
         var after = state.LineupOrder.ToArray();
         if ((state.TetherWaterIndex < 2) == (state.FreeWaterIndex < 2))
-            (after[4 + state.FreeWaterIndex], after[4 + 3 - state.FreeWaterIndex]) = (after[4 + 3 - state.FreeWaterIndex], after[4 + state.FreeWaterIndex]);
+            // Partner is on the same N/S side, opposite E/W side:
+            // 0(NW)<->5(SW), 1(SW)<->4(NW), 2(NE)<->7(SE), 3(SE)<->6(NE)
+            (after[4 + state.FreeWaterIndex], after[4 + (state.FreeWaterIndex ^ 1)]) = (after[4 + (state.FreeWaterIndex ^ 1)], after[4 + state.FreeWaterIndex]);
         return after;
     }
 
